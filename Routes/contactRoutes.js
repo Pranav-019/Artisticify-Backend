@@ -2,14 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Contact = require('../Models/contactModel'); // Ensure the path is correct
 const Order = require('../Models/orderModel'); // Ensure the path is correct
-const twilio = require('twilio');
-
-
-// POST API to submit contact form
-// Twilio credentials
-const accountSid = 'AC471d08f2e4a0fef4cd7ea3283d10de54'; // Replace with your Twilio Account SID
-const authToken = '039adf86933712147a9410aff631fcdf'; // Replace with your Twilio Auth Token
-const client = twilio(accountSid, authToken);
 
 // POST API to submit contact form
 router.post('/submit', async (req, res) => {
@@ -37,32 +29,6 @@ router.post('/submit', async (req, res) => {
         // Save contact to the database
         const savedContact = await newContact.save();
 
-        // Send a WhatsApp message using Twilio
-        try {
-            const whatsappMessage = await client.messages.create({
-                from: 'whatsapp:+14155238886', // Twilio WhatsApp number
-                to: 'whatsapp:+919112808717', // Your WhatsApp number
-                contentSid: 'HXb5b62575e6e4ff6129ad7c8efe1f983e', // Replace with your Content SID
-                contentVariables: JSON.stringify({
-                    "1": `New Lead: ${name}`,
-                    "2": `City: ${city}, Phone: ${phone}, Service: ${serviceSelected}`
-                }),
-            });
-
-            console.log(`WhatsApp message sent with SID: ${whatsappMessage.sid}`);
-        } catch (twilioError) {
-            console.error('Twilio message error:', twilioError.message);
-
-            // Fallback to plain text message if Content SID fails
-            await client.messages.create({
-                from: 'whatsapp:+14155238886',
-                to: 'whatsapp:+919112808717',
-                body: `New Lead: ${name}\nCity: ${city}\nPhone: ${phone}\nService: ${serviceSelected}`,
-            });
-
-            console.log('Plain text WhatsApp message sent as fallback');
-        }
-
         // Respond with success
         res.status(201).json({
             message: 'Contact form submitted successfully!',
@@ -73,7 +39,6 @@ router.post('/submit', async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-
 
 // GET API to fetch all contact form submissions
 router.get('/', async (req, res) => {
@@ -175,4 +140,5 @@ router.patch('/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+
 module.exports = router;
