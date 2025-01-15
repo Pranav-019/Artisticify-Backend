@@ -7,9 +7,9 @@ const twilio = require('twilio');
 
 // POST API to submit contact form
 // Twilio credentials
-const accountSid = process.env.TWILIO_ACCOUNT_SID; // Get from .env
-const authToken = process.env.TWILIO_AUTH_TOKEN; // Get from .env
-const client = twilio(accountSid, authToken);// Replace with your Twilio Auth Token
+const accountSid = 'AC471d08f2e4a0fef4cd7ea3283d10de54'; // Replace with your Twilio Account SID
+const authToken = '039adf86933712147a9410aff631fcdf'; // Replace with your Twilio Auth Token
+const client = twilio(accountSid, authToken);
 
 // POST API to submit contact form
 router.post('/submit', async (req, res) => {
