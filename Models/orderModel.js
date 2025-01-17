@@ -14,7 +14,9 @@ const orderSchema = new mongoose.Schema({
     serviceSelected: { type: String, required: true },
     packageSelected: { type: String, required: true }, // Package selected (Basic, Standard, Premium)
     amountPaid: { type: Number, required: true }, // Amount paid
+    totalAmount: { type: Number, required: true }, // Total amount of the package
     message: { type: String, required: true },
+    custom: { type: String, default: '' }, // Custom field (optional)
     orderStatus: { 
         type: String, 
         default: 'pending', 

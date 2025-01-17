@@ -29,7 +29,9 @@ router.post('/', async (req, res) => {
     serviceSelected,
     packageSelected,
     amountPaid,
-    message
+    totalAmount,
+    message,
+    custom
   } = req.body;
 
   try {
@@ -42,7 +44,9 @@ router.post('/', async (req, res) => {
       serviceSelected,
       packageSelected,
       amountPaid,
-      message
+      totalAmount,
+      message,
+      custom // Optional field
     });
 
     // Save the new order to the database
@@ -55,7 +59,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update order status and add updates
 // Update order status and add updates
 router.put('/:orderId', async (req, res) => {
   const { orderId } = req.params; // Get orderId from route parameters
@@ -88,6 +91,5 @@ router.put('/:orderId', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 module.exports = router;
