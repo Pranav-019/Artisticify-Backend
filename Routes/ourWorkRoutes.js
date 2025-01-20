@@ -1,113 +1,132 @@
 const express = require('express');
+const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-const OurWork = require('../Models/ourWorkModel'); // Import the model
+const Ourwork = require('../Models/ourWorkModel');
 
-const router = express.Router();
-
-// Ensure the uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// Set up Multer for file storage
+// Set up multer storage engine to store images locally
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir); // Directory to save uploaded images
+    cb(null, './uploads'); // Folder where images will be stored
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`); // Unique file name
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
-  fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|gif/;
-    const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimeType = fileTypes.test(file.mimetype);
-    if (extName && mimeType) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed (JPEG, JPG, PNG, GIF)'));
-    }
-  },
-});
-
-// Add an image (with file upload)
-router.post('/add', upload.single('image'), async (req, res) => {
-  const { category, subCategory } = req.body;
-
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image file uploaded' });
-    }
-
-    const imageUrl = `/uploads/${req.file.filename}`; // Relative path to the uploaded file
-    let categoryDoc = await OurWork.findOne({ name: category });
-
-    if (!categoryDoc) {
-      categoryDoc = new OurWork({ name: category });
-    }
-
-    if (category === 'Stationary' && subCategory) {
-      let subCat = categoryDoc.subCategories.find(sub => sub.name === subCategory);
-      if (!subCat) {
-        subCat = { name: subCategory, images: [] };
-        categoryDoc.subCategories.push(subCat);
-      }
-      subCat.images.push(imageUrl);
-    } else if (category !== 'Stationary') {
-      if (!categoryDoc.images) categoryDoc.images = [];
-      categoryDoc.images.push(imageUrl);
-    } else {
-      return res.status(400).json({ error: 'Subcategory is required for Stationary' });
-    }
-
-    await categoryDoc.save();
-    res.status(200).json({ message: 'Image added successfully', categoryDoc });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      error: 'Error adding image',
-      details: error.message,
-      stack: error.stack,
-    });
+    const ext = path.extname(file.originalname); // Extract file extension
+    const fileName = Date.now() + ext; // Use timestamp as filename
+    cb(null, fileName);
   }
 });
 
-// Fetch all images under a specific category (and optionally subcategory)
-// GET images by category (and optional subcategory)
-router.get('/images', async (req, res) => {
-    const { category, subCategory } = req.query;
+const upload = multer({ storage });
+
+// Insert images (via URL or file upload)
+router.post('/insert', upload.any(), async (req, res) => {
+    const { category, subCategory, imageUrls } = req.body;
+    let finalImageUrls = [];
+  
+    // Handle uploaded files
+    if (req.files && req.files.length > 0) {
+      finalImageUrls = req.files.map(file => `/uploads/${file.filename}`); // Store local path for each uploaded image
+    }
+  
+    // Handle image URLs if provided
+    if (imageUrls && imageUrls.length > 0) {
+      finalImageUrls = finalImageUrls.concat(imageUrls.split(',')); // Concatenate image URLs
+    }
+  
+    // If no images or URLs are provided
+    if (finalImageUrls.length === 0) {
+      return res.status(400).json({ message: 'No images or URLs provided.' });
+    }
   
     try {
-      if (!category) {
-        return res.status(400).json({ error: 'Category is required' });
-      }
+      // Check if the category already exists in the database
+      let existingWork = await Ourwork.findOne({ category });
   
-      let categoryDoc = await OurWork.findOne({ name: category });
-  
-      if (!categoryDoc) {
-        return res.status(404).json({ error: 'Category not found' });
-      }
-  
-      if (subCategory) {
-        const subCat = categoryDoc.subCategories.find(sub => sub.name === subCategory);
-        if (!subCat) {
-          return res.status(404).json({ error: 'Subcategory not found' });
-        }
-        return res.status(200).json({ images: subCat.images });
+      if (existingWork) {
+        // If the category exists, update the existing work with new images
+        existingWork.imageUrls = existingWork.imageUrls.concat(finalImageUrls);  // Add new image URLs to existing ones
+        existingWork.subCategory = subCategory || existingWork.subCategory;  // Update subCategory if provided
+        await existingWork.save();
+        return res.status(200).json({ message: 'Images updated successfully', updatedWork: existingWork });
       } else {
-        return res.status(200).json({ images: categoryDoc.images });
+        // If no work exists, create a new one
+        const newWork = new Ourwork({
+          category, 
+          subCategory,
+          imageUrls: finalImageUrls
+        });
+        await newWork.save();
+        res.status(201).json({ message: 'Images inserted successfully', newWork });
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error fetching images', details: error.message });
+      res.status(500).json({ message: 'Error inserting images', error });
     }
   });
   
+
+// Update images (via URL or file upload)
+router.put('/update/:id', upload.any(), async (req, res) => {
+  const { id } = req.params;
+  const { category, subCategory, imageUrls } = req.body;
+  let finalImageUrls = [];
+
+  // Handle uploaded files
+  if (req.files && req.files.length > 0) {
+    finalImageUrls = req.files.map(file => `/uploads/${file.filename}`); // Store local path for each uploaded image
+  }
+
+  // Handle image URLs if provided
+  if (imageUrls && imageUrls.length > 0) {
+    finalImageUrls = finalImageUrls.concat(imageUrls.split(',')); // Concatenate image URLs
+  }
+
+  // If no images or URLs are provided
+  if (finalImageUrls.length === 0) {
+    return res.status(400).json({ message: 'No images or URLs provided.' });
+  }
+
+  try {
+    const updatedWork = await Ourwork.findByIdAndUpdate(
+      id,
+      { category, subCategory, imageUrls: finalImageUrls },
+      { new: true }
+    );
+
+    if (!updatedWork) {
+      return res.status(404).json({ message: 'Work not found' });
+    }
+
+    res.status(200).json({ message: 'Images updated successfully', updatedWork });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating images', error });
+  }
+});
+
+// Delete image(s)
+router.delete('/delete/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedWork = await Ourwork.findByIdAndDelete(id);
+
+    if (!deletedWork) {
+      return res.status(404).json({ message: 'Work not found' });
+    }
+
+    res.status(200).json({ message: 'Work deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting work', error });
+  }
+});
+
+// Get all works
+router.get('/get', async (req, res) => {
+  try {
+    const works = await Ourwork.find().populate('category'); // Populate category details if needed
+    res.status(200).json({ message: 'Works retrieved successfully', works });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving works', error });
+  }
+});
+
 module.exports = router;
