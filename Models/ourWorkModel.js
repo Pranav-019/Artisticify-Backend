@@ -9,11 +9,11 @@ const ourworkSchema = new mongoose.Schema({
   },
   subCategory: {
     type: String,
-    enum: ['envelope', 'menu-card', 'certificate'],
+    enum: ['envelope', 'menu-card', 'certificate', ''],  // Allow empty string for non-stationary categories
     required: function() {
       return this.category === 'stationary';  // Only require subCategory if the category is 'stationary'
     },
-    default: null
+    default: ''
   },
   imageUrls: {
     type: [String],  
