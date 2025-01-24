@@ -1,29 +1,27 @@
+
 const mongoose = require('mongoose');
+
 
 const ourworkSchema = new mongoose.Schema({
   category: {
     type: String,
-    enum: ['logo', 'brochure', 'poster', 'flyer', 'packaging', 'ui/ux', 'icon', 'magazine', 'visual aid', 'stationary'],
-    required: true,
-    unique: true  // Ensuring unique category name
-  },
-  subCategory: {
-    type: String,
-    enum: ['envelope', 'menu-card', 'certificate'],
-    required: function() {
-      return this.category === 'stationary';  // Only require subCategory if the category is 'stationary'
-    },
-    default: null
-  },
-  imageUrls: {
-    type: [String],  
+    enum: ['logo', 'brochure','flyer','packaging','icon','ui/ux' ,'stationary','magazine','visual Aid','poster'], // List of categories (expand as needed)
     required: true
   },
+  images: [
+    {
+      data: Buffer, // Image data
+      contentType: String // Content type (e.g., 'image/webp', 'image/png')
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
+// Create a model
 const OurWork = mongoose.model('OurWork', ourworkSchema);
+
+// Export the model
 module.exports = OurWork;
