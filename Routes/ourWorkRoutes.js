@@ -1,105 +1,189 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs')
 const Ourwork = require('../Models/ourWorkModel');
+const OurWork = require('../Models/ourWorkModel');
+const Design = require('../Models/design');
 
-// Insert images (via Drive links)
-router.post('/insert', async (req, res) => {
-  const { category, subCategory, imageUrls } = req.body;
-
-  if (!imageUrls || imageUrls.length === 0) {
-    return res.status(400).json({ message: 'No Drive links provided.' });
+// Set up multer storage engine to store images locally
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './uploads'); // Folder where images will be stored
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); // Extract file extension
+    const fileName = Date.now() + ext; // Use timestamp as filename
+    cb(null, fileName);
   }
+});
 
-  let finalImageUrls = Array.isArray(imageUrls) ? imageUrls : imageUrls.split(',').map(url => url.trim());
+const upload = multer({ storage });
 
-  // Check for valid category
-  const validCategories = ['logo', 'brochure', 'poster', 'flyer', 'packaging', 'ui/ux', 'icon', 'magazine', 'visual aid', 'stationary'];
-  if (!validCategories.includes(category)) {
-    return res.status(400).json({ message: 'Invalid category provided.' });
-  }
 
-  // Set subCategory to "" for all categories, including "stationary"
-  const finalSubCategory = subCategory || "";
-
+router.post('/insert', upload.single('imageUrls'), async (req, resp) => {
   try {
-    let existingWork = await Ourwork.findOne({ category });
+    // Check if category is provided in the request body
+    const { category } = req.body;
+    if (!category) {
+      return resp.status(400).send({ error: "Category is required" }); // Bad request if no category provided
+    }
 
-    if (existingWork) {
-      // Update the existing category
-      existingWork.imageUrls = existingWork.imageUrls.concat(finalImageUrls);
-      existingWork.subCategory = finalSubCategory;  // Ensure subCategory is always an empty string
-      await existingWork.save();
-      return res.status(200).json({ message: 'Drive links updated successfully', updatedWork: existingWork });
-    } else {
-      // Create a new category entry
-      const newWork = new Ourwork({
-        category,
-        subCategory: finalSubCategory,  // Use empty string or provided subCategory
-        imageUrls: finalImageUrls
+    // Check if the file is present
+    if (!req.file) {
+      return resp.status(400).send({ error: "Image is required" }); // Bad request if no file uploaded
+    }
+
+    // Create a new "Our Work" entry with the category and image data
+    const newOurWork = new OurWork({
+      category: category, // Save the category
+      images: [
+        {
+          data: fs.readFileSync(req.file.path), // Read the file content as binary data
+          contentType: req.file.mimetype // Save the file's MIME type
+        }
+      ]
+    });
+
+    // Save the new "Our Work" entry to the database
+    await newOurWork.save();
+
+    // Send success response
+    resp.status(201).send({
+      success: true,
+      message: "Our Work item created successfully",
+      ourWork: newOurWork,
+    });
+  } catch (error) {
+    console.error("Error during image upload:", error);
+    resp.status(500).send({
+      success: false,
+      error: error.message || error,
+      message: "Error in creating Our Work item",
+    });
+  }
+});
+
+
+
+
+router.get('/fetch', async (req, resp) => {
+  try {
+    // Find all entries in the OurWork collection
+    const allWorks = await OurWork.find();
+    
+    // Check if data is fetched properly
+    console.log("Fetched all works:", allWorks);  // Debugging line
+
+    // Map through the results to prepare image data for the response
+    const formattedWorks = allWorks.map(work => {
+      console.log("Processing work:", work);  // Debugging line
+
+      // Process the images field
+      const images = work.images.map(image => {
+        // Ensure that image.data is a buffer and convert it to Base64
+        const base64Data = image.data ? image.data.toString('base64') : null;
+        return {
+          data: base64Data,  // Convert binary data to base64
+          contentType: image.contentType,
+        };
       });
 
-      await newWork.save();
-      return res.status(200).json({ message: 'Drive links inserted successfully', newWork });
-    }
+      return {
+        id: work._id,
+        category: work.category,
+        images: images,  // Return images data
+        createdAt: work.createdAt,
+      };
+    });
+
+    // Send the formatted works in the response
+    resp.status(200).send({
+      success: true,
+      message: "Fetched Our Work items successfully",
+      ourWorks: formattedWorks,
+    });
   } catch (error) {
-    console.error('Error inserting drive links:', error);
-    res.status(500).json({ message: 'Error inserting Drive links', error: error.message });
-  }
-});
-// Update images (via Drive links)
-router.put('/update/:id', async (req, res) => {
-  const { id } = req.params;
-  const { category, subCategory, imageUrls } = req.body;
-
-  if (!imageUrls || imageUrls.length === 0) {
-    return res.status(400).json({ message: 'No Drive links provided.' });
-  }
-
-  // Ensure imageUrls is an array, split if it's a string
-  let finalImageUrls = Array.isArray(imageUrls) ? imageUrls : imageUrls.split(',').map(url => url.trim());
-
-  try {
-    const updatedWork = await Ourwork.findByIdAndUpdate(
-      id,
-      { category, subCategory, imageUrls: finalImageUrls },
-      { new: true }
-    );
-
-    if (!updatedWork) {
-      return res.status(404).json({ message: 'Work not found' });
-    }
-
-    res.status(200).json({ message: 'Drive links updated successfully', updatedWork });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating Drive links', error });
+    console.error("Error fetching images:", error);
+    resp.status(500).send({
+      success: false,
+      message: "Error in fetching Our Work items",
+      error,
+    });
   }
 });
 
-
-// Delete image(s)
-router.delete('/delete/:id', async (req, res) => {
-  const { id } = req.params;
-
+router.put('/update/:id', upload.single('imageUrls'), async (req, resp) => {
   try {
-    const deletedWork = await Ourwork.findByIdAndDelete(id);
+    const { category } = req.body;
+    const { id } = req.params; // Get the ID of the entry to update
 
-    if (!deletedWork) {
-      return res.status(404).json({ message: 'Work not found' });
+    if (!category) {
+      return resp.status(400).send({ error: "Category is required" }); // Bad request if no category provided
     }
 
-    res.status(200).json({ message: 'Work deleted successfully' });
+    // Find the existing "Our Work" entry by ID
+    const ourWork = await OurWork.findById(id);
+    if (!ourWork) {
+      return resp.status(404).send({ error: "Our Work item not found" }); // Not found if the item doesn't exist
+    }
+
+    // Update category and image (if new image is provided)
+    ourWork.category = category; // Update the category
+
+    if (req.file) {
+      // If a new file is provided, update the image
+      ourWork.images = [
+        {
+          data: fs.readFileSync(req.file.path),
+          contentType: req.file.mimetype
+        }
+      ];
+    }
+
+    // Save the updated "Our Work" entry
+    await ourWork.save();
+
+    // Send success response
+    resp.status(200).send({
+      success: true,
+      message: "Our Work item updated successfully",
+      ourWork,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting work', error });
+    console.error("Error during update:", error);
+    resp.status(500).send({
+      success: false,
+      error: error.message || error,
+      message: "Error in updating Our Work item",
+    });
   }
 });
 
-// Get all works
-router.get('/get', async (req, res) => {
+
+router.delete('/delete/:id', async (req, resp) => {
   try {
-    const works = await Ourwork.find().populate('category'); // Populate category details if needed
-    res.status(200).json({ message: 'Works retrieved successfully', works });
+    const { id } = req.params; // Get the ID of the entry to delete
+
+    // Find and delete the "Our Work" entry by ID
+    const deletedOurWork = await OurWork.findByIdAndDelete(id);
+    if (!deletedOurWork) {
+      return resp.status(404).send({ error: "Our Work item not found" }); // Not found if the item doesn't exist
+    }
+
+    // Send success response
+    resp.status(200).send({
+      success: true,
+      message: "Our Work item deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error retrieving works', error });
+    console.error("Error during deletion:", error);
+    resp.status(500).send({
+      success: false,
+      error: error.message || error,
+      message: "Error in deleting Our Work item",
+    });
   }
 });
 

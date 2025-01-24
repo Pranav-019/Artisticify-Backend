@@ -9,6 +9,7 @@ const contactRoutes = require('./Routes/contactRoutes');
 const userRoutes = require('./Routes/userRoutes');
 const ourworkRoutes = require('./Routes/ourWorkRoutes');
 const newsletterRoute = require('./Routes/newsletterRoute');
+const design = require('./Routes/designRoutes');
 
 // Connect to MongoDB
 connectDB();
@@ -23,6 +24,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/contact', contactRoutes); 
 app.use('/api/users', userRoutes);
 app.use('/api/ourwork', ourworkRoutes);
+app.use('/api/design/', design);
 app.use('/api/newsletter', newsletterRoute);
 
 
