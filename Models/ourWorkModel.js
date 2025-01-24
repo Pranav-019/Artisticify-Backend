@@ -5,18 +5,18 @@ const ourworkSchema = new mongoose.Schema({
     type: String,
     enum: ['logo', 'brochure', 'poster', 'flyer', 'packaging', 'ui/ux', 'icon', 'magazine', 'visual aid', 'stationary'],
     required: true,
-    unique: true  // Ensuring unique category name
+    unique: true
   },
   subCategory: {
     type: String,
-    enum: ['envelope', 'menu-card', 'certificate', ''],  // Allow empty string for non-stationary categories
+    enum: ['envelope', 'menu-card', 'certificate', ''],
     required: function() {
-      return this.category === 'stationary';  // Only require subCategory if the category is 'stationary'
+      return this.category === 'stationary';
     },
     default: ''
   },
   imageUrls: {
-    type: [String],  
+    type: [String],
     required: true
   },
   createdAt: {
