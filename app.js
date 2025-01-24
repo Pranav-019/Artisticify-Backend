@@ -10,7 +10,7 @@ const userRoutes = require('./Routes/userRoutes');
 const ourworkRoutes = require('./Routes/ourWorkRoutes');
 const newsletterRoute = require('./Routes/newsletterRoute');
 const design = require('./Routes/designRoutes');
-
+const path = require('path');
 // Connect to MongoDB
 connectDB();
 
@@ -26,6 +26,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/ourwork', ourworkRoutes);
 app.use('/api/design/', design);
 app.use('/api/newsletter', newsletterRoute);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 

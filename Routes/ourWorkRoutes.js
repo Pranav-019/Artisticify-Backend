@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs')
-const Ourwork = require('../Models/ourWorkModel');
+const fs = require('fs');
 const OurWork = require('../Models/ourWorkModel');
 const Design = require('../Models/design');
 
@@ -13,37 +12,34 @@ const storage = multer.diskStorage({
     cb(null, './uploads'); // Folder where images will be stored
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); // Extract file extension
-    const fileName = Date.now() + ext; // Use timestamp as filename
-    cb(null, fileName);
-  }
+    const uniqueName = `${Date.now()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
 });
 
 const upload = multer({ storage });
 
 
-router.post('/insert', upload.single('imageUrls'), async (req, resp) => {
+// POST route to insert data
+router.post('/insert', upload.array('images', 10), async (req, resp) => {
   try {
-    // Check if category is provided in the request body
     const { category } = req.body;
+
     if (!category) {
-      return resp.status(400).send({ error: "Category is required" }); // Bad request if no category provided
+      return resp.status(400).send({ error: "Category is required" });
     }
 
-    // Check if the file is present
-    if (!req.file) {
-      return resp.status(400).send({ error: "Image is required" }); // Bad request if no file uploaded
+    if (!req.files || req.files.length === 0) {
+      return resp.status(400).send({ error: "At least one image is required" });
     }
+
+    // Generate URLs for all uploaded images as an array of strings
+    const imageUrls = req.files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
 
     // Create a new "Our Work" entry with the category and image data
     const newOurWork = new OurWork({
-      category: category, // Save the category
-      images: [
-        {
-          data: fs.readFileSync(req.file.path), // Read the file content as binary data
-          contentType: req.file.mimetype // Save the file's MIME type
-        }
-      ]
+      category: category,  // Save the category
+      images: imageUrls,   // Array of image URLs (strings)
     });
 
     // Save the new "Our Work" entry to the database
@@ -67,42 +63,17 @@ router.post('/insert', upload.single('imageUrls'), async (req, resp) => {
 
 
 
-
+// GET route to fetch all data
 router.get('/fetch', async (req, resp) => {
   try {
     // Find all entries in the OurWork collection
     const allWorks = await OurWork.find();
-    
-    // Check if data is fetched properly
-    console.log("Fetched all works:", allWorks);  // Debugging line
-
-    // Map through the results to prepare image data for the response
-    const formattedWorks = allWorks.map(work => {
-      console.log("Processing work:", work);  // Debugging line
-
-      // Process the images field
-      const images = work.images.map(image => {
-        // Ensure that image.data is a buffer and convert it to Base64
-        const base64Data = image.data ? image.data.toString('base64') : null;
-        return {
-          data: base64Data,  // Convert binary data to base64
-          contentType: image.contentType,
-        };
-      });
-
-      return {
-        id: work._id,
-        category: work.category,
-        images: images,  // Return images data
-        createdAt: work.createdAt,
-      };
-    });
 
     // Send the formatted works in the response
     resp.status(200).send({
       success: true,
       message: "Fetched Our Work items successfully",
-      ourWorks: formattedWorks,
+      ourWorks: allWorks, // Send the works directly
     });
   } catch (error) {
     console.error("Error fetching images:", error);
@@ -114,32 +85,30 @@ router.get('/fetch', async (req, resp) => {
   }
 });
 
-router.put('/update/:id', upload.single('imageUrls'), async (req, resp) => {
+
+// PUT route to update an existing item
+router.put('/update/:id', upload.array('images', 10), async (req, resp) => {
   try {
     const { category } = req.body;
     const { id } = req.params; // Get the ID of the entry to update
 
     if (!category) {
-      return resp.status(400).send({ error: "Category is required" }); // Bad request if no category provided
+      return resp.status(400).send({ error: "Category is required" });
     }
 
     // Find the existing "Our Work" entry by ID
     const ourWork = await OurWork.findById(id);
     if (!ourWork) {
-      return resp.status(404).send({ error: "Our Work item not found" }); // Not found if the item doesn't exist
+      return resp.status(404).send({ error: "Our Work item not found" });
     }
 
-    // Update category and image (if new image is provided)
+    // Update category and images (if new images are provided)
     ourWork.category = category; // Update the category
 
-    if (req.file) {
-      // If a new file is provided, update the image
-      ourWork.images = [
-        {
-          data: fs.readFileSync(req.file.path),
-          contentType: req.file.mimetype
-        }
-      ];
+    if (req.files && req.files.length > 0) {
+      // If new files are provided, update the images
+      const imageUrls = req.files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+      ourWork.images = imageUrls; // Save the new array of image URLs
     }
 
     // Save the updated "Our Work" entry
@@ -162,6 +131,7 @@ router.put('/update/:id', upload.single('imageUrls'), async (req, resp) => {
 });
 
 
+// DELETE route to remove an item
 router.delete('/delete/:id', async (req, resp) => {
   try {
     const { id } = req.params; // Get the ID of the entry to delete
@@ -169,7 +139,7 @@ router.delete('/delete/:id', async (req, resp) => {
     // Find and delete the "Our Work" entry by ID
     const deletedOurWork = await OurWork.findByIdAndDelete(id);
     if (!deletedOurWork) {
-      return resp.status(404).send({ error: "Our Work item not found" }); // Not found if the item doesn't exist
+      return resp.status(404).send({ error: "Our Work item not found" });
     }
 
     // Send success response
