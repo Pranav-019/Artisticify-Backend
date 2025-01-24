@@ -108,7 +108,7 @@ router.get('/fetch', async (req, resp) => {
     console.error("Error fetching images:", error);
     resp.status(500).send({
       success: false,
-      message: "Error in fetching Our Work items",
+      message: error,
       error,
     });
   }
