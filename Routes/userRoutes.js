@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/createUser", async (req, res) => {
   const { role } = req.body;
 
-  if (!role || !["CRM", "ADMIN", "WEB", "UI/UX", "SEO", "SOCIAL MEDIA"].includes(role)) {
+  if (!role || !["CRM", "ADMIN", "TEAM", "UI/UX", "SEO", "SOCIAL MEDIA"].includes(role)) {
     return res.status(400).json({ error: "Invalid role provided" });
   }
 
