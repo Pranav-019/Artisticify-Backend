@@ -1,76 +1,89 @@
 const express = require('express');
-const router = express.Router();
 const multer = require('multer');
-const ImageKit = require('imagekit');
+const router = express.Router();
 const Design = require('../Models/designModel');
+const ImageKit = require('imagekit');
 
-// Initialize ImageKit
+// Configure ImageKit
 const imagekit = new ImageKit({
-  publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=", // Your ImageKit public key
-  privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=", // Your ImageKit private key
-  urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj" // Your ImageKit URL endpoint
+  publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
+  privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
+  urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj",
 });
 
-// Set up multer storage (temporary memory storage)
+// Configure multer for file upload
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// POST route to insert design data
-router.post('/insert', upload.array('images', 10), async (req, resp) => {
+// POST route to upload images and create a design
+router.post('/insert', upload.array('images', 10), async (req, res) => {
   try {
     const { category } = req.body;
+    const imageFiles = req.files;
 
-    if (!category) {
-      return resp.status(400).send({ error: 'Category is required' });
+    if (!category || !imageFiles || imageFiles.length === 0) {
+      return res.status(400).json({ error: 'Category and images are required.' });
     }
-
-    if (!req.files || req.files.length === 0) {
-      return resp.status(400).send({ error: 'At least one image is required' });
-    }
-
-    // Log the uploaded files
-    console.log('Uploaded files:', req.files);
 
     // Upload images to ImageKit
-    const imageUploadPromises = req.files.map((file) =>
+    const uploadPromises = imageFiles.map((file) =>
       imagekit.upload({
-        file: file.buffer, // File buffer
-        fileName: `${Date.now()}-${file.originalname}`, // Unique filename
-        folder: '/designs', // Optional: Specify a folder in ImageKit
+        file: file.buffer,
+        fileName: file.originalname,
       })
     );
 
-    // Wait for all images to be uploaded
-    const uploadedImages = await Promise.all(imageUploadPromises);
+    const uploadResponses = await Promise.all(uploadPromises);
 
-    // Log the uploaded images
-    console.log('Uploaded images:', uploadedImages);
+    // Extract URLs from upload responses
+    const imageUrls = uploadResponses.map((upload) => upload.url);
 
-    // Extract URLs of uploaded images
-    const imageUrls = uploadedImages.map((image) => image.url);
+    // Save design to MongoDB
+    const design = new Design({ category, images: imageUrls });
+    await design.save();
 
-    // Create a new "Design" entry
-    const newDesign = new Design({
-      category,
-      image: imageUrls, // Save the image URLs as an array
-    });
-
-    // Save the new design item to the database
-    await newDesign.save();
-
-    // Send success response
-    resp.status(201).send({
-      success: true,
-      message: 'Design item created successfully',
-      design: newDesign,
-    });
+    res.status(201).json({ message: 'Design created successfully!', design });
   } catch (error) {
-    console.error('Error during image upload:', error);
-    resp.status(500).send({
-      success: false,
-      error: error.message || error,
-      message: 'Error in creating Design item',
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create design.' });
+  }
+});
+
+// GET route to fetch all designs
+router.get('/get', async (req, res) => {
+  try {
+    const designs = await Design.find();
+    res.status(200).json(designs);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch designs.' });
+  }
+});
+
+// DELETE route to delete a design by ID
+router.delete('/delete/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const design = await Design.findById(id);
+    if (!design) {
+      return res.status(404).json({ error: 'Design not found.' });
+    }
+
+    // Optionally: Delete images from ImageKit
+    const deletePromises = design.images.map((url) => {
+      const fileId = url.split('/').pop().split('?')[0]; // Extract file ID from URL
+      return imagekit.deleteFile(fileId);
     });
+    await Promise.all(deletePromises);
+
+    // Delete design from MongoDB
+    await Design.findByIdAndDelete(id);
+
+    res.status(200).json({ message: 'Design deleted successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete design.' });
   }
 });
 

@@ -128,4 +128,33 @@ router.put('/update/:id', upload.array('images', 10), async (req, resp) => {
   }
 });
 
+
+// GET route to fetch all "Our Work" items
+router.get('/fetch', async (req, resp) => {
+  try {
+    const ourWorks = await OurWork.find();
+
+    if (!ourWorks || ourWorks.length === 0) {
+      return resp.status(404).send({
+        success: false,
+        message: 'No Our Work items found',
+      });
+    }
+
+    resp.status(200).send({
+      success: true,
+      message: 'Our Work items fetched successfully',
+      data: ourWorks,
+    });
+  } catch (error) {
+    console.error('Error during fetch:', error);
+    resp.status(500).send({
+      success: false,
+      error: error.message || error,
+      message: 'Error in fetching Our Work items',
+    });
+  }
+});
+
+
 module.exports = router;

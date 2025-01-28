@@ -3,14 +3,13 @@ const mongoose = require('mongoose');
 const designSchema = new mongoose.Schema({
   category: {
     type: String,
-    required: true
+    required: true,
   },
-  images: { // Changed this from "image" to "images" to allow multiple images
+  images: {
     type: [String], // Array of image URLs
-    required: true
-  }
-});
+    required: true,
+  },
+}, { timestamps: true });
 
 const Design = mongoose.model('Design', designSchema);
-
 module.exports = Design;
