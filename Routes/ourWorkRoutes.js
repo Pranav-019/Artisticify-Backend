@@ -157,4 +157,35 @@ router.get('/fetch', async (req, resp) => {
 });
 
 
+// DELETE route to remove an existing item by ID
+router.delete('/delete/:id', async (req, resp) => {
+  try {
+    const { id } = req.params;
+    console.log("Received ID:", id);  // Log the received ID
+
+    const ourWork = await OurWork.findById(id);
+    if (!ourWork) {
+      return resp.status(404).send({ error: 'Our Work item not found' });
+    }
+
+    console.log("Deleting OurWork item with ID:", id);  // Log the item being deleted
+    await ourWork.deleteOne();
+    console.log("Item deleted successfully.");
+
+    resp.status(200).send({
+      success: true,
+      message: 'Our Work item deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error during delete:', error);
+    resp.status(500).send({
+      success: false,
+      error: error.message || error,
+      message: 'Error in deleting Our Work item',
+    });
+  }
+});
+
+
+
 module.exports = router;

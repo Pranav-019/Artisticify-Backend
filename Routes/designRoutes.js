@@ -62,29 +62,24 @@ router.get('/get', async (req, res) => {
 
 // DELETE route to delete a design by ID
 router.delete('/delete/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const design = await Design.findById(id);
-    if (!design) {
-      return res.status(404).json({ error: 'Design not found.' });
+    try {
+      const { id } = req.params;
+      
+      // Find the design by ID
+      const design = await Design.findById(id);
+      if (!design) {
+        return res.status(404).json({ error: 'Design not found.' });
+      }
+      
+      // Delete the design from MongoDB
+      await Design.findByIdAndDelete(id);
+  
+      res.status(200).json({ message: 'Design deleted successfully.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete design.' });
     }
-
-    // Optionally: Delete images from ImageKit
-    const deletePromises = design.images.map((url) => {
-      const fileId = url.split('/').pop().split('?')[0]; // Extract file ID from URL
-      return imagekit.deleteFile(fileId);
-    });
-    await Promise.all(deletePromises);
-
-    // Delete design from MongoDB
-    await Design.findByIdAndDelete(id);
-
-    res.status(200).json({ message: 'Design deleted successfully.' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete design.' });
-  }
-});
+  });
+  
 
 module.exports = router;
