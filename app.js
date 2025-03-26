@@ -11,6 +11,7 @@ const ourworkRoutes = require('./Routes/ourWorkRoutes');
 const newsletterRoute = require('./Routes/newsletterRoute');
 const path = require('path');
 const designRoutes = require('./Routes/designRoutes')
+const socialLinks = require('./Routes/socialLinksroutes')
 // Connect to MongoDB
 connectDB();
 
@@ -27,6 +28,7 @@ app.use('/api/ourwork', ourworkRoutes);
 app.use('/api/newsletter', newsletterRoute);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/design/', designRoutes);
+app.use('/api/social', socialLinks);
 
 
 

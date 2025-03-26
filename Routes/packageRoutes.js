@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 // Add a new package (admin feature)
 router.post('/', async (req, res) => {
   try {
-    const { name, type, category, price, features, isActive } = req.body;
+    const { name, type, category, price, features, isActive, colorCode } = req.body;
 
     // Validation for required fields
     if (!name || !type || !category || !price || !features || !Array.isArray(features) || features.length === 0) {
@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
     }
 
     // Create a new package document
-    const newPackage = new Package({ name, type, category, price, features, isActive });
+    const newPackage = new Package({ name, type, category, price, features, isActive, colorCode });
     const savedPackage = await newPackage.save();
 
     res.status(201).json({ message: 'Package added successfully.', package: savedPackage });
@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, category, price, features, isActive } = req.body;
+    const { name, type, category, price, features, isActive, colorCode } = req.body;
 
     // Validate package type if provided
     if (type && !['Basic', 'Standard', 'Premium'].includes(type)) {
@@ -61,7 +61,7 @@ router.put('/:id', async (req, res) => {
     // Find and update the package
     const updatedPackage = await Package.findByIdAndUpdate(
       id,
-      { name, type, category, price, features, isActive },
+      { name, type, category, price, features, isActive, colorCode },
       { new: true, runValidators: true } // Return the updated document and validate changes
     );
 

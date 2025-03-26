@@ -17,14 +17,6 @@ const ourworkSchema = new mongoose.Schema({
     ],
     required: true,
   },
-  subCategory: {
-    type: String,
-    enum: ['envelope', 'menu-card', 'certificate', ''],
-    required: function () {
-      return this.category === 'stationary'; // SubCategory is required only when category is "stationary"
-    },
-    default: '',
-  },
   images: {
     type: [String], // This ensures the field is an array of strings
     required: true,  // Optional, if you want to make sure there is at least one image URL

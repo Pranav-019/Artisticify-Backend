@@ -6,22 +6,9 @@ const OurWork = require('../Models/ourWorkModel');
 
 // Initialize ImageKit
 const imagekit = new ImageKit({
-  publicKey 
-:
- 
-"public_snLOVXlg2xzC7+UqSI8i8ZkW488="
-,
-
-    privateKey 
-:
- 
-"private_JIg2ar8TzquKqrG4oSnSUUnNteE="
-,
-
-    urlEndpoint 
-:
- 
-"https://ik.imagekit.io/bq9ym6nknj" // Replace with your ImageKit URL endpoint
+  publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
+  privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
+  urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj" // Replace with your ImageKit URL endpoint
 });
 
 // Set up multer storage (temporary memory storage)
@@ -128,7 +115,6 @@ router.put('/update/:id', upload.array('images', 10), async (req, resp) => {
   }
 });
 
-
 // GET route to fetch all "Our Work" items
 router.get('/fetch', async (req, resp) => {
   try {
@@ -155,7 +141,6 @@ router.get('/fetch', async (req, resp) => {
     });
   }
 });
-
 
 // DELETE route to remove an existing item by ID
 router.delete('/delete/:id', async (req, resp) => {
@@ -185,7 +170,5 @@ router.delete('/delete/:id', async (req, resp) => {
     });
   }
 });
-
-
 
 module.exports = router;

@@ -37,6 +37,10 @@ const packageSchema = new mongoose.Schema({
   isActive: { 
     type: Boolean, 
     default: true 
+  },
+  colorCode: {
+    type: String,
+    default: null
   }
 });
 
