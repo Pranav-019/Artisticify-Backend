@@ -48,7 +48,7 @@ router.put('/update/:id', async (req, res) => {
 });
 
 // Get social links
-router.get('/', async (req, res) => {
+router.get('/get', async (req, res) => {
     try {
         const links = await SocialLinks.findOne();
         if (!links) {
