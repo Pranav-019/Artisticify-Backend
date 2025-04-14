@@ -13,6 +13,7 @@ const path = require('path');
 const designRoutes = require('./Routes/designRoutes')
 const socialLinks = require('./Routes/socialLinksroutes')
 const counterRoutes = require('./Routes/counterRoutes');
+const blogRoutes = require('./Routes/blogRoutes'); 
 
 // Connect to MongoDB
 connectDB();
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/design/', designRoutes);
 app.use('/api/social', socialLinks);
 app.use('/api/counter', counterRoutes);
+app.use('/api/blogs', blogRoutes);
 
 
 

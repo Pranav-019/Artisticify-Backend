@@ -1,49 +1,51 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const Counter = require("../Models/counter");
+const Counter = require('../Models/counter');
 
-// @desc    Get all counter data
-router.get("/get", async (req, res) => {
+// GET all counters
+router.get('/', async (req, res) => {
   try {
     const counters = await Counter.find();
-    res.status(200).json({ success: true, data: counters });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json(counters);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
-// @desc    Create a counter
-router.post("/create", async (req, res) => {
+// POST a new counter
+router.post('/', async (req, res) => {
+  const counter = new Counter({
+    boxNo: req.body.boxNo,
+    title: req.body.title,
+    description: req.body.description,
+    count: req.body.count,
+  });
+
   try {
-    const newCounter = new Counter(req.body);
-    await newCounter.save();
-    res.status(201).json({ success: true, data: newCounter });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    const newCounter = await counter.save();
+    res.status(201).json(newCounter);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
-// @desc    Update a counter
-router.put("/update/:id", async (req, res) => {
+// PUT update a counter
+router.put('/:id', async (req, res) => {
   try {
-    const updatedCounter = await Counter.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.status(200).json({ success: true, data: updatedCounter });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    const updatedCounter = await Counter.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedCounter);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
-// @desc    Delete a counter
-router.delete("/delete/:id", async (req, res) => {
+// DELETE a counter
+router.delete('/:id', async (req, res) => {
   try {
     await Counter.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: "Counter deleted" });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.json({ message: 'Counter deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
