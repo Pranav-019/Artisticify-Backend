@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Counter = require("../Models/Counter");
+const Counter = require("../Models/counter");
 
 // @desc    Get all counter data
 router.get("/get", async (req, res) => {
