@@ -132,7 +132,7 @@ const router = express.Router();
 const SeoBlog = require('../Models/seoBlogModel');
 
 // Create a new SEO blog
-router.post('/insert', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { mainTitle, description, sections } = req.body;
 
