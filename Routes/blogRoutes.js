@@ -136,8 +136,8 @@ router.post('/', async (req, res) => {
   try {
     const { mainTitle, description, sections } = req.body;
 
-    if (!mainTitle || !description) {
-      return res.status(400).json({ error: 'Main title and description are required' });
+    if (!mainTitle || !description || !sections) {
+      return res.status(400).json({ error: 'Main title , description and sections are required' });
     }
 
     const newSeoBlog = new SeoBlog({
