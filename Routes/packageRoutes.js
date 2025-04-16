@@ -81,7 +81,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find and delete the package
+    
     const deletedPackage = await Package.findByIdAndDelete(id);
 
     if (!deletedPackage) {
@@ -96,3 +96,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
