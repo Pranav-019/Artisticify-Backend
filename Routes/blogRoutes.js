@@ -129,20 +129,23 @@
 
 const express = require('express');
 const router = express.Router();
-const SeoBlog = require('../Models/seoBlogModel');
+const SeoBlog = require('../Models/blogModel');
 
 // Create a new SEO blog
-router.post('/', async (req, res) => {
+router.post('/addBlog', async (req, res) => {
   try {
-    const { mainTitle, description, sections } = req.body;
+    const { mainTitle, description,shortDescription, sections } = req.body;
 
-    if (!mainTitle || !description || !sections) {
-      return res.status(400).json({ error: 'Main title , description and sections are required' });
+    console.log("body : ", req.body);
+
+    if (!mainTitle || !description ||!shortDescription || !sections) {
+      return res.status(400).json({ error: 'Main title , description,shortDescription and sections are required' });
     }
 
     const newSeoBlog = new SeoBlog({
       mainTitle,
       description,
+      shortDescription,
       sections,
     });
 
@@ -155,7 +158,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update an existing SEO blog
-router.put('/update/:id', async (req, res) => {
+router.put('/updateBlog/:id', async (req, res) => {
   try {
     const { mainTitle, description, sections } = req.body;
     const { id } = req.params;
@@ -176,7 +179,7 @@ router.put('/update/:id', async (req, res) => {
 });
 
 // Fetch all SEO blogs
-router.get('/fetch', async (req, res) => {
+router.get('/allBlogs', async (req, res) => {
   try {
     const blogs = await SeoBlog.find();
     if (!blogs || blogs.length === 0) {
@@ -190,7 +193,7 @@ router.get('/fetch', async (req, res) => {
 });
 
 // Fetch a single SEO blog by ID
-router.get('/fetch/:id', async (req, res) => {
+router.get('/fetchBolg/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const blog = await SeoBlog.findById(id);
@@ -204,7 +207,7 @@ router.get('/fetch/:id', async (req, res) => {
 });
 
 // Delete an SEO blog
-router.delete('/delete/:id', async (req, res) => {
+router.delete('/deleteBlog/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const blog = await SeoBlog.findById(id);

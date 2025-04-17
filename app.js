@@ -14,6 +14,7 @@ const designRoutes = require('./Routes/designRoutes')
 const socialLinks = require('./Routes/socialLinksroutes')
 const counterRoutes = require('./Routes/counterRoutes');
 const blogRoutes = require('./Routes/blogRoutes'); 
+const testimonialRoutes = require("./Routes/testimonialRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -34,6 +35,7 @@ app.use('/api/design/', designRoutes);
 app.use('/api/social', socialLinks);
 app.use('/api/counter', counterRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 
 
 
