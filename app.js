@@ -17,6 +17,7 @@ const blogRoutes = require('./Routes/blogRoutes');
 const testimonialRoutes = require("./Routes/testimonialRoutes");
 const cardRoutes = require("./Routes/cardRoute");
 const reverseCaraRoutes = require('./Routes/reverseCara');
+const collectionRoutes = require('./Routes/collectionRoute');
 // Connect to MongoDB
 connectDB();
 
@@ -39,7 +40,7 @@ app.use('/api/blogs', blogRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use('/api/reverseCara', reverseCaraRoutes);
 app.use("/api/cards", cardRoutes);
-
+app.use('/api/collection', collectionRoutes);
 
 
 // Start the server
