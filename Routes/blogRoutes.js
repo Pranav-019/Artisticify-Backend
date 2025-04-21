@@ -12,11 +12,11 @@ const imagekit = new ImageKit({
   urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj"
 });
 
-// Multer Setup
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// ✅ CREATE blog
+
 router.post("/addBlog", upload.single("image"), async (req, res) => {
   try {
     const { mainTitle, shortDescription, description, sections } = req.body;
