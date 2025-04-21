@@ -16,7 +16,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ✅ Add an Image (Only image)
-router.post('/addReverseCara', upload.single('image'), async (req, res) => {
+router.post('/addReverseCard', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Image is required' });
@@ -71,7 +71,7 @@ router.put('/updateReverseCara/:id', upload.single('image'), async (req, res) =>
 });
 
 // ✅ Get All Images
-router.get('/fetchReverseCara', async (req, res) => {
+router.get('/fetchReverseCard', async (req, res) => {
   try {
     const images = await ReverseCara.find();
     if (!images || images.length === 0) {
@@ -85,7 +85,7 @@ router.get('/fetchReverseCara', async (req, res) => {
 });
 
 // ✅ Delete Image
-router.delete('/deleteReverseCara/:id', async (req, res) => {
+router.delete('/deleteReverseCard/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
