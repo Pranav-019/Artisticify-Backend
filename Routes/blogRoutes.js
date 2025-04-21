@@ -19,7 +19,7 @@ const upload = multer({ storage });
 // Create a new SEO blog
 router.post('/addBlog',upload.single('image'), async (req, res) => {
   try {
-    const { mainTitle, description,shortDescription, sections,image } = req.body;
+    const { mainTitle, description,shortDescription, sections } = req.body;
 
     console.log("body : ", req.body);
 
