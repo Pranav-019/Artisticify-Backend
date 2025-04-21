@@ -1,58 +1,56 @@
+const express = require('express');
 const multer = require('multer');
 const ImageKit = require('imagekit');
-const express = require('express');
-const router = express.Router();
 const SeoBlog = require('../Models/blogModel');
 
-// Initialize ImageKit
+const router = express.Router();
+
+// ImageKit Configuration
 const imagekit = new ImageKit({
   publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
   privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
   urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj"
 });
 
-// Multer configuration for file upload
-const storage = multer.memoryStorage(); // Storing file in memory
+// Multer Setup
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Create a new SEO blog
-router.post('/addBlog',upload.single('image'), async (req, res) => {
+// ✅ CREATE blog
+router.post("/addBlog", upload.single("image"), async (req, res) => {
   try {
-    const { mainTitle, description,shortDescription, sections } = req.body;
+    const { mainTitle, shortDescription, description, sections } = req.body;
 
-    console.log("body : ", req.body);
+    const parsedSections = sections ? JSON.parse(sections) : [];
 
-    if (!mainTitle || !description ||!shortDescription || !sections) {
-      return res.status(400).json({ error: 'Main title , description,shortDescription and sections are required' });
+    let imageUrl = null;
+
+    if (req.file) {
+      const uploadedImage = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: `${Date.now()}-${req.file.originalname}`,
+        folder: "/blog"
+      });
+      imageUrl = uploadedImage.url;
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'Image is required' });
-    }
-
-    const uploadedImage = await imagekit.upload({
-      file: req.file.buffer,
-      fileName: `${Date.now()}-${req.file.originalname}`,
-      folder: '/uploads',
-    });
-
-    const newSeoBlog = new SeoBlog({
+    const newBlog = new SeoBlog({
       mainTitle,
-      description,
       shortDescription,
-      sections,
-      image: uploadedImage.url,
+      description,
+      sections: parsedSections,
+      image: imageUrl
     });
 
-      await newBlog.save();
-      res.status(201).json({ message: "Blog created successfully", blog: newBlog });
-    } catch (error) {
-      console.error("Add Blog Error:", error);
-      res.status(500).json({ message: "Server error while creating blog" });
-    }
+    await newBlog.save();
+    res.status(201).json({ message: "Blog created successfully", blog: newBlog });
+  } catch (error) {
+    console.log("Add Blog Error:", error);
+    res.status(500).json({ error: "Failed to create blog" });
+  }
 });
 
-// Update an existing SEO blog
+// ✅ UPDATE blog
 router.put('/updateBlog/:id', upload.single('image'), async (req, res) => {
   try {
     const { mainTitle, description, shortDescription, sections } = req.body;
@@ -64,7 +62,7 @@ router.put('/updateBlog/:id', upload.single('image'), async (req, res) => {
     seoBlog.mainTitle = mainTitle || seoBlog.mainTitle;
     seoBlog.description = description || seoBlog.description;
     seoBlog.shortDescription = shortDescription || seoBlog.shortDescription;
-    seoBlog.sections = sections || seoBlog.sections;
+    seoBlog.sections = sections ? JSON.parse(sections) : seoBlog.sections;
 
     if (req.file) {
       const uploadedImage = await imagekit.upload({
@@ -83,13 +81,11 @@ router.put('/updateBlog/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-// Fetch all SEO blogs
+// ✅ GET all blogs
 router.get('/allBlogs', async (req, res) => {
   try {
     const blogs = await SeoBlog.find();
-    if (!blogs || blogs.length === 0) {
-      return res.status(404).json({ success: false, message: 'No SEO blogs found' });
-    }
+    if (!blogs.length) return res.status(404).json({ success: false, message: 'No SEO blogs found' });
     res.status(200).json({ success: true, blogs });
   } catch (error) {
     console.error(error);
@@ -97,13 +93,12 @@ router.get('/allBlogs', async (req, res) => {
   }
 });
 
-// Fetch a single SEO blog by ID
+// ✅ GET single blog
 router.get('/fetchBlog/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const blog = await SeoBlog.findById(id);
     if (!blog) return res.status(404).json({ success: false, message: 'SEO blog not found' });
-
     res.status(200).json({ success: true, blog });
   } catch (error) {
     console.error(error);
@@ -111,7 +106,7 @@ router.get('/fetchBlog/:id', async (req, res) => {
   }
 });
 
-// Delete an SEO blog
+// ✅ DELETE blog
 router.delete('/deleteBlog/:id', async (req, res) => {
   try {
     const { id } = req.params;
