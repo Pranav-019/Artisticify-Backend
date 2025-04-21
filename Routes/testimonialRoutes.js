@@ -8,7 +8,7 @@ const Testimonial = require('../Models/testimonial');
 const imagekit = new ImageKit({
     publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
     privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
-    urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj" // Replace with your ImageKit URL endpoint
+    urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj" 
   });
 
 // Multer memory storage
@@ -16,7 +16,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ✅ Create a new testimonial (POST)
-router.post('/insert', upload.single('image'), async (req, res) => {
+router.post('/addTestimonial', upload.single('image'), async (req, res) => {
   try {
     const { name, position, text, rating } = req.body;
 
@@ -31,7 +31,7 @@ router.post('/insert', upload.single('image'), async (req, res) => {
     const uploadedImage = await imagekit.upload({
       file: req.file.buffer,
       fileName: `${Date.now()}-${req.file.originalname}`,
-      folder: '/testimonials',
+      folder: '/uploads',
     });
 
     const newTestimonial = new Testimonial({
@@ -51,7 +51,7 @@ router.post('/insert', upload.single('image'), async (req, res) => {
 });
 
 // ✅ Update a testimonial (PUT)
-router.put('/update/:id', upload.single('image'), async (req, res) => {
+router.put('/updateTestimonial/:id', upload.single('image'), async (req, res) => {
   try {
     const { name, position, text, rating } = req.body;
     const { id } = req.params;
@@ -82,7 +82,7 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
 });
 
 // ✅ Get all testimonials (GET)
-router.get('/fetch', async (req, res) => {
+router.get('/fetchTestimonial', async (req, res) => {
   try {
     const testimonials = await Testimonial.find();
     if (!testimonials || testimonials.length === 0) {
@@ -96,7 +96,7 @@ router.get('/fetch', async (req, res) => {
 });
 
 // ✅ Delete testimonial (DELETE)
-router.delete('/delete/:id', async (req, res) => {
+router.delete('/deleteTestimonial/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
