@@ -13,7 +13,7 @@ const imagekit = new ImageKit({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// ➤ Create Collection
+
 router.post('/addCollection', upload.single('image'), async (req, res) => {
   try {
     const file = req.file;
