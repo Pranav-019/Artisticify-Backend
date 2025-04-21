@@ -14,7 +14,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ➤ Create Collection
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/addCollection', upload.single('image'), async (req, res) => {
   try {
     const file = req.file;
 
@@ -39,7 +39,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 });
 
 // ➤ Get All Collections
-router.get('/', async (req, res) => {
+router.get('/fetchCollection', async (req, res) => {
   try {
     const collections = await Collection.find();
     res.json(collections);
@@ -48,8 +48,33 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/updateCollection/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const collections = await Collection.findById(id);
+    if (!collections) return res.status(404).json({ error: 'collections not found' });
+
+    if (req.file) {
+      const uploadedImage = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: `${Date.now()}-${req.file.originalname}`,
+        folder: '/collections',
+      });
+      collections.image = uploadedImage.url;
+    }
+
+    await collections.save();
+    res.status(200).json({ success: true, collections });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 // ➤ Delete a Collection
-router.delete('/:id', async (req, res) => {
+router.delete('/deleteCollection:id', async (req, res) => {
   try {
     const deleted = await Collection.findByIdAndDelete(req.params.id);
     if (!deleted) {
