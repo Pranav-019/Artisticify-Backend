@@ -16,19 +16,33 @@ const storage = multer.memoryStorage(); // Storing file in memory
 const upload = multer({ storage: storage });
 
 // Create a new SEO blog
-router.post("/addBlog", upload.single("image"), async (req, res) => {
-    try {
-      const { mainTitle, shortDescription, description, sections } = req.body;
-      const parsedSections = typeof sections === "string" ? JSON.parse(sections) : [];
-      const imageUrl = req.file ? req.file.buffer : "";
+router.post('/addBlog',upload.single('image'), async (req, res) => {
+  try {
+    const { mainTitle, description,shortDescription, sections } = req.body;
 
-      const newBlog = new SeoBlog({
-        mainTitle,
-        shortDescription,
-        description,
-        sections: parsedSections,
-        image: imageUrl,
-      });
+    console.log("body : ", req.body);
+
+    if (!mainTitle || !description ||!shortDescription || !sections) {
+      return res.status(400).json({ error: 'Main title , description,shortDescription and sections are required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Image is required' });
+    }
+
+    const uploadedImage = await imagekit.upload({
+      file: req.file.buffer,
+      fileName: `${Date.now()}-${req.file.originalname}`,
+      folder: '/uploads',
+    });
+
+    const newSeoBlog = new SeoBlog({
+      mainTitle,
+      description,
+      shortDescription,
+      sections,
+      image: uploadedImage.url,
+    });
 
       await newBlog.save();
       res.status(201).json({ message: "Blog created successfully", blog: newBlog });

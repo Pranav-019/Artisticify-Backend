@@ -3,8 +3,8 @@
 const mongoose = require('mongoose');
 
 const sectionSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true }
+  title: { type: String},
+  content: { type: String }
 });
 
 const seoBlogSchema = new mongoose.Schema({
