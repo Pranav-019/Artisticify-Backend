@@ -1,222 +1,119 @@
-// const express = require('express');
-// const router = express.Router();
-// const multer = require('multer');
-// const ImageKit = require('imagekit');
-// const Blog = require('../Models/blogModel');
+const multer = require('multer');
+const ImageKit = require('imagekit');
+const express = require('express');
+const router = express.Router();
+const SeoBlog = require('../Models/blogModel');
 
+const imagekit = new ImageKit({
+  publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
+  privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
+  urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj"
+});
 
-// const imagekit = new ImageKit({
-//   publicKey: "public_snLOVXlg2xzC7+UqSI8i8ZkW488=",
-//   privateKey: "private_JIg2ar8TzquKqrG4oSnSUUnNteE=",
-//   urlEndpoint: "https://ik.imagekit.io/bq9ym6nknj" 
-// });
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// // Multer Configuration (memory storage)
-// const storage = multer.memoryStorage();
-// const upload = multer({ storage });
+// Create a new SEO blog
+router.post("/addBlog", upload.single("image"), async (req, res) => {
+    try {
+      const { title, author, date, description, sections } = req.body;
+  
+      const parsedSections = typeof sections === "string" ? JSON.parse(sections) : [];
+  
+      const imageUrl = req.file ? req.file.path : "";
+  
+      const newBlog = new SeoBlog({
+        title,
+        author,
+        date,
+        description,
+        image: imageUrl,
+        sections: parsedSections,
+      });
+  
+      await newBlog.save();
+      res.status(201).json({ message: "Blog created successfully", blog: newBlog });
+    } catch (error) {
+      console.error("Add Blog Error:", error);
+      res.status(500).json({ message: "Server error while creating blog" });
+    }
+  });
+  
+// Update an existing SEO blog
+router.put('/updateBlog/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { mainTitle, description, shortDescription, sections } = req.body;
+    const { id } = req.params;
 
-// // POST route to create a new blog post with image upload
-// router.post('/insert', upload.single('image'), async (req, res) => {
-//   try {
-//     const { title, description } = req.body;
+    const seoBlog = await SeoBlog.findById(id);
+    if (!seoBlog) return res.status(404).json({ error: 'SEO blog not found' });
 
-//     // Ensure title and description are provided
-//     if (!title || !description) {
-//       return res.status(400).json({ error: 'Title and description are required' });
-//     }
+    seoBlog.mainTitle = mainTitle || seoBlog.mainTitle;
+    seoBlog.description = description || seoBlog.description;
+    seoBlog.shortDescription = shortDescription || seoBlog.shortDescription;
 
-//     // Ensure image is provided
-//     if (!req.file) {
-//       return res.status(400).json({ error: 'Image is required' });
-//     }
+    if (sections) {
+      seoBlog.sections = JSON.parse(sections);
+    }
 
-//     // Upload image to ImageKit
-//     const uploadedImage = await imagekit.upload({
-//       file: req.file.buffer,
-//       fileName: `${Date.now()}-${req.file.originalname}`,
-//       folder: '/blogs',
-//     });
+    if (req.file) {
+      const uploadedImage = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: `${Date.now()}-${req.file.originalname}`,
+        folder: '/blog',
+      });
+      seoBlog.image = uploadedImage.url;
+    }
 
-//     // Save new blog post to MongoDB
-//     const newBlog = new Blog({
-//       title,
-//       description,
-//       image: uploadedImage.url, // Save the ImageKit URL
-//     });
+    await seoBlog.save();
+    res.status(200).json({ success: true, seoBlog });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-//     await newBlog.save();
+// Fetch all SEO blogs
+router.get('/allBlogs', async (req, res) => {
+  try {
+    const blogs = await SeoBlog.find();
+    if (!blogs || blogs.length === 0) {
+      return res.status(404).json({ success: false, message: 'No SEO blogs found' });
+    }
+    res.status(200).json({ success: true, blogs });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-//     res.status(201).json({ success: true, blog: newBlog });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
+// Fetch a single SEO blog by ID
+router.get('/fetchBolg/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await SeoBlog.findById(id);
+    if (!blog) return res.status(404).json({ success: false, message: 'SEO blog not found' });
 
-// // PUT route to update an existing blog post (with optional image update)
-// router.put('/update/:id', upload.single('image'), async (req, res) => {
-//   try {
-//     const { title, description } = req.body;
-//     const { id } = req.params;
+    res.status(200).json({ success: true, blog });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-//     // Ensure the blog post exists
-//     const blog = await Blog.findById(id);
-//     if (!blog) return res.status(404).json({ error: 'Blog not found' });
+// Delete an SEO blog
+router.delete('/deleteBlog/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await SeoBlog.findById(id);
+    if (!blog) return res.status(404).json({ error: 'SEO blog not found' });
 
-//     // Ensure title and description are provided
-//     if (!title || !description) {
-//       return res.status(400).json({ error: 'Title and description are required' });
-//     }
+    await blog.deleteOne();
+    res.status(200).json({ success: true, message: 'SEO blog deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-//     // Update fields
-//     blog.title = title || blog.title;
-//     blog.description = description || blog.description;
-
-//     // Upload new image if provided
-//     if (req.file) {
-//       const uploadedImage = await imagekit.upload({
-//         file: req.file.buffer,
-//         fileName: `${Date.now()}-${req.file.originalname}`,
-//         folder: '/blogs',
-//       });
-//       blog.image = uploadedImage.url; // Update image URL
-//     }
-
-//     // Save the updated blog post
-//     await blog.save();
-
-//     res.status(200).json({ success: true, blog });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // GET route to fetch all blogs
-// router.get('/fetch', async (req, res) => {
-//   try {
-//     const blogs = await Blog.find();
-//     if (!blogs || blogs.length === 0) {
-//       return res.status(404).json({ success: false, message: 'No blogs found' });
-//     }
-//     res.status(200).json({ success: true, blogs });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // DELETE route to remove a blog post by ID
-// router.delete('/delete/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     // Find the blog post by ID
-//     const blog = await Blog.findById(id);
-//     if (!blog) return res.status(404).json({ error: 'Blog not found' });
-
-//     // Delete the blog post
-//     await blog.deleteOne();
-//     res.status(200).json({ success: true, message: 'Blog post deleted successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// module.exports = router;
-
-
-// const express = require('express');
-// const router = express.Router();
-// const SeoBlog = require('../Models/seoBlogModel');
-
-// // Create a new SEO blog
-// router.post('/', async (req, res) => {
-//   try {
-//     const { mainTitle, description, sections } = req.body;
-
-//     if (!mainTitle || !description || !sections) {
-//       return res.status(400).json({ error: 'Main title , description and sections are required' });
-//     }
-
-//     const newSeoBlog = new SeoBlog({
-//       mainTitle,
-//       description,
-//       sections,
-//     });
-
-//     await newSeoBlog.save();
-//     res.status(201).json({ success: true, seoBlog: newSeoBlog });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // Update an existing SEO blog
-// router.put('/update/:id', async (req, res) => {
-//   try {
-//     const { mainTitle, description, sections } = req.body;
-//     const { id } = req.params;
-
-//     const seoBlog = await SeoBlog.findById(id);
-//     if (!seoBlog) return res.status(404).json({ error: 'SEO blog not found' });
-
-//     seoBlog.mainTitle = mainTitle || seoBlog.mainTitle;
-//     seoBlog.description = description || seoBlog.description;
-//     seoBlog.sections = sections || seoBlog.sections;
-
-//     await seoBlog.save();
-//     res.status(200).json({ success: true, seoBlog });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // Fetch all SEO blogs
-// router.get('/fetch', async (req, res) => {
-//   try {
-//     const blogs = await SeoBlog.find();
-//     if (!blogs || blogs.length === 0) {
-//       return res.status(404).json({ success: false, message: 'No SEO blogs found' });
-//     }
-//     res.status(200).json({ success: true, blogs });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // Fetch a single SEO blog by ID
-// router.get('/fetch/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const blog = await SeoBlog.findById(id);
-//     if (!blog) return res.status(404).json({ success: false, message: 'SEO blog not found' });
-
-//     res.status(200).json({ success: true, blog });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// // Delete an SEO blog
-// router.delete('/delete/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const blog = await SeoBlog.findById(id);
-//     if (!blog) return res.status(404).json({ error: 'SEO blog not found' });
-
-//     await blog.deleteOne();
-//     res.status(200).json({ success: true, message: 'SEO blog deleted successfully' });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// module.exports = router;
-
+module.exports = router;
